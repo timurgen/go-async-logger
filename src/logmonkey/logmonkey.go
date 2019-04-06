@@ -10,6 +10,9 @@ import (
 //Logger message channel size
 const LoggerBufferSize int = 1024
 
+//time for logger graceful shutdown
+const GracefulLoggerShutdownTimeMc = 100 * time.Millisecond
+
 //Map of registered loggers
 var loggers = make(map[string]*Logger)
 
@@ -72,6 +75,7 @@ type Logger struct {
 	appender       LogAppender
 	formatter      LogFormatter
 	messageChannel chan string
+	closed         chan bool
 }
 
 //SetAppender - sets appender for logger
@@ -100,6 +104,11 @@ func (log *Logger) listen() {
 		select {
 		case str := <-log.messageChannel:
 			log.appender.ConsumeMessage(str)
+		case closes := <-log.closed:
+			if closes {
+				//FIXME warning if messageChannel not empty
+				return
+			}
 		}
 	}
 }
@@ -161,6 +170,7 @@ func GetLogger(name string) *Logger {
 			appender:       &ConsoleLogAppender{},
 			formatter:      &DefaultLogFormatter{Format: "%s - [%s] %s \t%s"},
 			messageChannel: make(chan string, LoggerBufferSize),
+			closed:         make(chan bool),
 		}
 
 		go logger.listen()
@@ -168,4 +178,24 @@ func GetLogger(name string) *Logger {
 	}
 
 	return loggers[name]
+}
+
+//FlushAllLoggers wait until al loggers completes their queues or timeout is reached
+//and terminates all loggers
+func FlushAllLoggers() {
+	flushStart := time.Now()
+	timeToWait := GracefulLoggerShutdownTimeMc * time.Duration(len(loggers))
+
+	for time.Now().Sub(flushStart)/time.Millisecond < timeToWait {
+		for name, logger := range loggers {
+			if len(logger.messageChannel) == 0 {
+				logger.closed <- true
+				delete(loggers, name)
+			}
+		}
+
+		if len(loggers) == 0 {
+			break
+		}
+	}
 }
