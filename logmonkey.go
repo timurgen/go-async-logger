@@ -123,7 +123,12 @@ func (log *Logger) listen() {
 			log.appender.ConsumeMessage(str)
 		case closes := <-log.closed:
 			if closes {
-				//FIXME warning if messageChannel not empty
+				if len(log.messageChannel) > 0 {
+					count := len(log.messageChannel)
+					msg := fmt.Sprintf("Logger was interrupted with %d messages in queue", count)
+					str := log.formatter.FormatMessage(msg, log.name, WARNING, time.Now())
+					log.appender.ConsumeMessage(str)
+				}
 				return
 			}
 		}
@@ -136,33 +141,34 @@ func (log *Logger) Log(message string, level LogLevel, obj ...interface{}) {
 		return
 	}
 	ts := time.Now()
-	formattedMessage := log.formatter.FormatMessage(message, log.name, level, ts)
+	formatted := fmt.Sprintf(message, obj...)
+	formattedMessage := log.formatter.FormatMessage(formatted, log.name, level, ts)
 	log.messageChannel <- formattedMessage
 }
 
 //Trace logs a message with TRACE level
 func (log *Logger) Trace(message string, obj ...interface{}) {
-	log.Log(message, TRACE, obj)
+	log.Log(message, TRACE, obj...)
 }
 
 //Debug logs a message with DEBUG level
 func (log *Logger) Debug(message string, obj ...interface{}) {
-	log.Log(message, DEBUG, obj)
+	log.Log(message, DEBUG, obj...)
 }
 
 //Info logs a message with INFO level
 func (log *Logger) Info(message string, obj ...interface{}) {
-	log.Log(message, INFO, obj)
+	log.Log(message, INFO, obj...)
 }
 
 //Warning logs a message with WARNING level
 func (log *Logger) Warning(message string, obj ...interface{}) {
-	log.Log(message, WARNING, obj)
+	log.Log(message, WARNING, obj...)
 }
 
 //Error logs a message with ERROR level
 func (log *Logger) Error(message string, obj ...interface{}) {
-	log.Log(message, ERROR, obj)
+	log.Log(message, ERROR, obj...)
 }
 
 //GetLogger return logger instance associated with given name

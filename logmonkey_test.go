@@ -209,3 +209,18 @@ func TestLogger_GetLevel(t *testing.T) {
 		})
 	}
 }
+
+func TestLogger_NoFlush(t *testing.T) {
+	logger := GetLogger("test")
+	for i := 0; i < 10; i++ {
+		logger.Info("message %v ok", i)
+	}
+}
+
+func TestLogger_Flush(t *testing.T) {
+	defer FlushAllLoggers()
+	logger := GetLogger("test2")
+	for i := 0; i < 10; i++ {
+		logger.Info("message %v ok", i)
+	}
+}
