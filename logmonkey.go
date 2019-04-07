@@ -8,10 +8,10 @@ import (
 	"time"
 )
 
-//Logger message channel size
+//LoggerBufferSize - logger message channel size
 const LoggerBufferSize int = 1024
 
-//time for logger graceful shutdown
+//GracefulLoggerShutdownTimeMc  - time for logger graceful shutdown
 const GracefulLoggerShutdownTimeMc = 100 * time.Millisecond
 
 //Map of registered loggers
@@ -63,21 +63,21 @@ type LogFormatter interface {
 	FormatMessage(message string, name string, level LogLevel, ts time.Time) string
 }
 
-//Default basic console appender
+//ConsoleLogAppender  default basic console appender
 type ConsoleLogAppender struct {
 }
 
-//Default basic log formatter
+//DefaultLogFormatter  default basic log formatter
 type DefaultLogFormatter struct {
 	Format string
 }
 
-//LogFormatter implementation for DefaultLogFormatter
+//FormatMessage  LogFormatter implementation for DefaultLogFormatter
 func (lf *DefaultLogFormatter) FormatMessage(message string, name string, level LogLevel, ts time.Time) string {
 	return fmt.Sprintf(lf.Format, ts.Format("2006-01-02T15:04:05.000000000"), name, level, message)
 }
 
-//LogAppender implementation for default ConsoleLogAppender
+//ConsumeMessage  LogAppender implementation for default ConsoleLogAppender
 func (la *ConsoleLogAppender) ConsumeMessage(str string) {
 	_, _ = os.Stdout.WriteString(str + "\n")
 }
