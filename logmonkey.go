@@ -79,7 +79,10 @@ func (lf *DefaultLogFormatter) FormatMessage(message string, name string, level 
 
 //ConsumeMessage  LogAppender implementation for default ConsoleLogAppender
 func (la *ConsoleLogAppender) ConsumeMessage(str string) {
-	_, _ = os.Stdout.WriteString(str + "\n")
+	_, err := os.Stdout.WriteString(str + "\n")
+	if err != nil {
+		panic(err)
+	}
 }
 
 //Logger structure
@@ -169,7 +172,7 @@ func GetLogger(name string) *Logger {
 			name:           name,
 			level:          INFO,
 			appender:       &ConsoleLogAppender{},
-			formatter:      &DefaultLogFormatter{Format: "%s - [%s] %s \t%s"},
+			formatter:      &DefaultLogFormatter{Format: "%s - [%s] %s %s"},
 			messageChannel: make(chan string, LoggerBufferSize),
 			closed:         make(chan bool),
 		}
