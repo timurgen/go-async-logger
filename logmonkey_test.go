@@ -1,7 +1,11 @@
 package logmonkey
 
 import (
+	"bytes"
+	"io"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -210,17 +214,80 @@ func TestLogger_GetLevel(t *testing.T) {
 	}
 }
 
-func TestLogger_NoFlush(t *testing.T) {
-	logger := GetLogger("test")
-	for i := 0; i < 10; i++ {
-		logger.Info("message %v ok", i)
-	}
+func TestLogger_Trace(t *testing.T) {
+	logger := GetLogger("trace logger")
+	logger.SetLevel(TRACE)
+
+	defer FlushAllLoggers()
+
+	logger.Trace("Plain message")
 }
 
-func TestLogger_Flush(t *testing.T) {
+func TestLogger_Debug(t *testing.T) {
+	logger := GetLogger("debug logger")
+	logger.SetLevel(DEBUG)
+
 	defer FlushAllLoggers()
-	logger := GetLogger("test2")
-	for i := 0; i < 10; i++ {
-		logger.Info("message %v ok", i)
+
+	logger.Debug("Plain message")
+}
+
+func TestLogger_Info(t *testing.T) {
+	logger := GetLogger("info logger")
+	logger.SetLevel(INFO)
+
+	defer FlushAllLoggers()
+
+	logger.Info("Plain message")
+}
+
+func TestLogger_Warning(t *testing.T) {
+	logger := GetLogger("warning logger")
+	logger.SetLevel(WARNING)
+
+	defer FlushAllLoggers()
+
+	logger.Warning("Plain message")
+}
+
+func TestLogger_Error(t *testing.T) {
+	logger := GetLogger("error logger")
+	logger.SetLevel(ERROR)
+
+	defer FlushAllLoggers()
+
+	logger.Error("Plain message")
+}
+
+func TestLogger_NoFlush_MustPrint(t *testing.T) {
+	message := "test message"
+	loggerName := "no-flush-output-test"
+
+	logger := GetLogger(loggerName)
+	old := os.Stdout // keep backup of the real stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	logger.Info(message)
+
+	outC := make(chan string)
+
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}()
+
+	time.Sleep(1 * time.Millisecond) //to be sure message passed through logging queue
+	w.Close()
+	os.Stdout = old // restoring the real stdout
+	out := <-outC
+
+	if !strings.Contains(out, message) {
+		t.Errorf("Expected '%v' contains message '%v'", out, message)
+	}
+
+	if !strings.Contains(out, loggerName) {
+		t.Errorf("Expected '%v' contains logger name '%v'", out, loggerName)
 	}
 }
