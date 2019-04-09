@@ -143,7 +143,13 @@ func (log *Logger) Log(message string, level LogLevel, obj ...interface{}) {
 	ts := time.Now()
 	formatted := fmt.Sprintf(message, obj...)
 	formattedMessage := log.formatter.FormatMessage(formatted, log.name, level, ts)
-	log.messageChannel <- formattedMessage
+	select {
+	case log.messageChannel <- formattedMessage:
+	default:
+		channelFullMsg := log.formatter.FormatMessage("logger queue is full", log.name, ERROR, ts)
+		log.appender.ConsumeMessage(channelFullMsg)
+	}
+
 }
 
 //Trace logs a message with TRACE level
