@@ -80,6 +80,7 @@ func (lf *DefaultLogFormatter) FormatMessage(message string, name string, level 
 	return fmt.Sprintf(lf.Format, ts.Format("2006-01-02T15:04:05.000000000"), name, level, message)
 }
 
+//JsonLogFormatter  default json log formatter
 type JsonLogFormatter struct {
 }
 
