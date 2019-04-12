@@ -2,10 +2,13 @@
 package logmonkey
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"time"
+	"unsafe"
 )
 
 //LoggerBufferSize - logger message channel size
@@ -75,6 +78,25 @@ type DefaultLogFormatter struct {
 //FormatMessage  LogFormatter implementation for DefaultLogFormatter
 func (lf *DefaultLogFormatter) FormatMessage(message string, name string, level LogLevel, ts time.Time) string {
 	return fmt.Sprintf(lf.Format, ts.Format("2006-01-02T15:04:05.000000000"), name, level, message)
+}
+
+type JsonLogFormatter struct {
+}
+
+//FormatMessage  LogFormatter implementation for JsonLogFormatter
+func (lf *JsonLogFormatter) FormatMessage(message string, name string, level LogLevel, ts time.Time) string {
+	messageMap := make(map[string]string)
+	messageMap["message"] = message
+	messageMap["logger_name"] = name
+	messageMap["level"] = level.String()
+	messageMap["timestamp"] = ts.Format("2006-01-02T15:04:05.000000000")
+
+	result, _ := json.Marshal(messageMap)
+
+	bh := (*reflect.SliceHeader)(unsafe.Pointer(&result))
+	sh := reflect.StringHeader{Data: bh.Data, Len: bh.Len}
+
+	return *(*string)(unsafe.Pointer(&sh))
 }
 
 //ConsumeMessage  LogAppender implementation for default ConsoleLogAppender
