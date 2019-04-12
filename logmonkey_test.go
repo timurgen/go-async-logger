@@ -72,7 +72,7 @@ func TestDefaultLogFormatter_FormatMessage(t *testing.T) {
 		want string
 	}{
 		{
-			name: "defult",
+			name: "default",
 			lf:   &DefaultLogFormatter{Format: "%s - [%s] %s %s"},
 			args: args{
 				message: "test message",
@@ -81,6 +81,41 @@ func TestDefaultLogFormatter_FormatMessage(t *testing.T) {
 				ts:      time.Date(2019, 4, 1, 18, 0, 0, 0, time.UTC),
 			},
 			want: "2019-04-01T18:00:00.000000000 - [main] DEBUG test message",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.lf.FormatMessage(tt.args.message, tt.args.name, tt.args.level, tt.args.ts); got != tt.want {
+				t.Errorf("DefaultLogFormatter.FormatMessage() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestJsonLogFormatter_FormatMessage(t *testing.T) {
+	defer FlushAllLoggers()
+	type args struct {
+		message string
+		name    string
+		level   LogLevel
+		ts      time.Time
+	}
+	tests := []struct {
+		name string
+		lf   *JsonLogFormatter
+		args args
+		want string
+	}{
+		{
+			name: "default",
+			lf:   &JsonLogFormatter{},
+			args: args{
+				message: "test message",
+				name:    "main",
+				level:   1,
+				ts:      time.Date(2019, 4, 1, 18, 0, 0, 0, time.UTC),
+			},
+			want: "{\"level\":\"DEBUG\",\"logger_name\":\"main\",\"message\":\"test message\",\"timestamp\":\"2019-04-01T18:00:00.000000000\"}",
 		},
 	}
 	for _, tt := range tests {
